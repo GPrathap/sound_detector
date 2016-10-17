@@ -9,145 +9,13 @@ import glob
 import matplotlib
 import matplotlib.pyplot as plt
 from operator import add
-
-from sys import getsizeof
-
+import APIs as api
 import tensorflow as tf
-import numpy as np
-from operator import add
 
-import seaborn as sb
-import time
 
-sb.set(style="white", palette="muted")
-
-import pandas as pd
-import random
-random.seed(20150420)
 numOfClasses = 10
+imagewidth = 16
 
-class Clip:
-    """A single 5-sec long recording."""
-
-    RATE = 44100  # All recordings in ESC are 44.1 kHz
-    FRAME = 1024  # Frame size in samples
-
-    class Audio:
-        """The actual audio data of the clip.
-
-            Uses a context manager to load/unload the raw audio data. This way clips
-            can be processed sequentially with reasonable memory usage.
-        """
-
-        def __init__(self, path):
-            self.path = path
-
-        def __enter__(self):
-            # Actual recordings are sometimes not frame accurate, so we trim/overlay to exactly 5 seconds
-            self.data = pydub.AudioSegment.silent(duration=5000)
-            self.data = self.data.overlay(pydub.AudioSegment.from_file(self.path)[0:5000])
-            self.raw = (np.fromstring(self.data._data, dtype="int16") + 0.5) / (0x7FFF + 0.5)  # convert to float
-            return (self)
-
-        def __exit__(self, exception_type, exception_value, traceback):
-            #if exception_type is not None:
-                #print exception_type, exception_value, traceback
-            del self.data
-            del self.raw
-
-    def __init__(self, filename):
-        self.filename = os.path.basename(filename)
-        self.path = os.path.abspath(filename)
-        self.directory = os.path.dirname(self.path)
-        self.category = self.directory.split('/')[-1]
-
-        self.audio = Clip.Audio(self.path)
-
-        with self.audio as audio:
-            self._compute_mfcc(audio)
-            self._compute_zcr(audio)
-            self._compute_fft(audio)
-
-    def _compute_mfcc(self, audio):
-        # MFCC computation with default settings (2048 FFT window length, 512 hop length, 128 bands)
-        self.melspectrogram = librosa.feature.melspectrogram(audio.raw, sr=Clip.RATE, hop_length=Clip.FRAME)
-        self.logamplitude = librosa.logamplitude(self.melspectrogram)
-        self.mfcc = librosa.feature.mfcc(S=self.logamplitude, n_mfcc=256).transpose()
-
-    def _compute_fft(self, audio):
-        self.fft = []
-        frames = int(np.ceil(len(audio.data) / 1000.0 * Clip.RATE / Clip.FRAME))
-
-        for i in range(0, frames):
-            frame = Clip._get_frame(audio, i)
-            ps = np.fft.fft(frame)
-            self.fft.append(np.abs(ps))
-
-        self.fft = np.asarray(self.fft)
-
-
-
-    def _compute_zcr(self, audio):
-        # Zero-crossing rate
-        self.zcr = []
-        frames = int(np.ceil(len(audio.data) / 1000.0 * Clip.RATE / Clip.FRAME))
-
-        for i in range(0, frames):
-            frame = Clip._get_frame(audio, i)
-            self.zcr.append(np.mean(0.5 * np.abs(np.diff(np.sign(frame)))))
-
-        self.zcr = np.asarray(self.zcr)
-
-    @classmethod
-    def _get_frame(cls, audio, index):
-        if index < 0:
-            return None
-        return audio.raw[(index * Clip.FRAME):(index + 1) * Clip.FRAME]
-
-    def __repr__(self):
-        return '<{0}/{1}>'.format(self.category, self.filename)
-
-
-def getClassArray():
-    return [0] * numOfClasses
-
-
-def load_dataset(name):
-    """Load all dataset recordings into a nested list."""
-    clips = []
-
-    datasetXForConvolution = []
-    datasetYForConvolution = []
-    datasetXForFull = []
-    datasetYForFull = []
-    for directory in sorted(os.listdir('{0}/'.format(name))):
-        directory = '{0}/{1}'.format(name, directory)
-        if os.path.isdir(directory) and os.path.basename(directory)[0:3].isdigit():
-            print('Parsing ' + directory)
-            category = []
-            for clip in sorted(os.listdir(directory)):
-                if clip[-3:] == 'ogg':
-                    audioFile = Clip('{0}/{1}'.format(directory, clip))
-                    numberOfWindows = len(audioFile.mfcc)
-
-                    featureSetPerWindowXForConvolution = audioFile.mfcc
-                    datasetXForConvolution.append(featureSetPerWindowXForConvolution.tolist())
-
-                    featureSetPerWindowXForFull = audioFile.zcr
-                    datasetXForFull.append(featureSetPerWindowXForFull.tolist())
-
-                    for i in range(0, numberOfWindows):
-                        classes = getClassArray()
-                        classes[int('{1}'.format(name, directory).split("/")[1].split("-")[0]) - 1] = 1
-                        datasetYForConvolution.append(classes)
-                        ##after adding new features add it to either one
-                        datasetYForFull.append(classes)
-
-                    category.append(audioFile)
-            clips.append(category)
-
-    print('All {0} recordings loaded.'.format(name))
-    return clips , datasetXForConvolution[0], datasetYForConvolution , datasetXForFull, datasetYForFull
 
 def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
     newXDataSetX = []
@@ -163,113 +31,15 @@ def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
             newXDataSetX.append(temp2)
     return newXDataSetX, newYDataSetY
 
-def add_subplot_axes(ax, position):
-    box = ax.get_position()
-    position_display = ax.transAxes.transform(position[0:2])
-    position_fig = plt.gcf().transFigure.inverted().transform(position_display)
-    x = position_fig[0]
-    y = position_fig[1]
-    return plt.gcf().add_axes([x, y, box.width * position[2], box.height * position[3]], axisbg='w')
-
-
-def plot_clip_overview(clip, ax):
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
-    ax_waveform = add_subplot_axes(ax, [0.0, 0.7, 1.0, 0.3])
-    ax_spectrogram = add_subplot_axes(ax, [0.0, 0.0, 1.0, 0.7])
-
-    with clip.audio as audio:
-        ax_waveform.plot(np.arange(0, len(audio.raw)) / float(Clip.RATE), audio.raw)
-        ax_waveform.get_xaxis().set_visible(False)
-        ax_waveform.get_yaxis().set_visible(False)
-        ax_waveform.set_title('{0} \n {1}'.format(clip.category, clip.filename), {'fontsize': 8}, y=1.03)
-
-        librosa.display.specshow(clip.logamplitude, sr=Clip.RATE, x_axis='time', y_axis='mel', cmap='RdBu_r')
-        ax_spectrogram.get_xaxis().set_visible(False)
-        ax_spectrogram.get_yaxis().set_visible(False)
-
-
-def plot_single_clip(clip):
-    col_names = list('MFCC_{}'.format(i) for i in range(np.shape(clip.mfcc)[1]))
-    MFCC = pd.DataFrame(clip.mfcc[:, :], columns=col_names)
-
-    f = plt.figure(figsize=(10, 6))
-    ax = f.add_axes([0.0, 0.0, 1.0, 1.0])
-    ax.get_xaxis().set_visible(False)
-    ax.get_yaxis().set_visible(False)
-    ax.set_frame_on(False)
-
-    ax_mfcc = add_subplot_axes(ax, [0.0, 0.0, 1.0, 0.75])
-    ax_mfcc.set_xlim(-400, 400)
-    ax_zcr = add_subplot_axes(ax, [0.0, 0.85, 1.0, 0.05])
-    ax_zcr.set_xlim(0.0, 1.0)
-
-    plt.title('Feature distribution across frames of a single clip ({0} : {1})'.format(clip.category, clip.filename), y=1.5)
-    sb.boxplot(data=MFCC, orient='h', order=list(reversed(MFCC.columns)), ax=ax_mfcc)
-    sb.boxplot(data=pd.DataFrame(clip.zcr, columns=['ZCR']), orient='h', ax=ax_zcr)
-    plt.show()
 
 
 
-def plot_single_feature_one_clip(feature, title, ax):
-    sb.despine()
-    ax.set_title(title, y=1.10)
-    sb.distplot(feature, bins=20, hist=True, rug=False,
-                hist_kws={"histtype": "stepfilled", "alpha": 0.5},
-                kde_kws={"shade": False},
-                color=sb.color_palette("muted", 4)[2], ax=ax)
+clips_10 , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = api.load_dataset('ESC-10')
+datasetXForConvolution,datasetYForConvolution = reconstructFeatureMatrix(datasetXForConvolution, datasetYForConvolution)
 
-
-def plot_single_feature_all_clips(feature, title, ax):
-    sb.despine()
-    ax.set_title(title, y=1.03)
-    sb.boxplot(feature, vert=False, orient='h', order=list(reversed(feature.columns)), ax=ax)
-
-
-def plot_single_feature_aggregate(feature, title, ax):
-    sb.despine()
-    ax.set_title(title, y=1.03)
-    sb.distplot(feature, bins=20, hist=True, rug=False,
-                hist_kws={"histtype": "stepfilled", "alpha": 0.5},
-                kde_kws={"shade": False},
-                color=sb.color_palette("muted", 4)[1], ax=ax)
-
-
-def generate_feature_summary(dataset, category, clip, coefficient):
-    title = "{0} : {1}".format(dataset[category][clip].category, dataset[category][clip].filename)
-    MFCC = pd.DataFrame()
-    aggregate = []
-    for i in range(0, len(dataset[category])):
-        MFCC[i] = dataset[category][i].mfcc[:, coefficient]
-        aggregate = np.concatenate([aggregate, dataset[category][i].mfcc[:, coefficient]])
-
-    f = plt.figure(figsize=(14, 12))
-    f.subplots_adjust(hspace=0.6, wspace=0.3)
-
-    ax1 = plt.subplot2grid((3, 3), (0, 0))
-    ax2 = plt.subplot2grid((3, 3), (1, 0))
-    ax3 = plt.subplot2grid((3, 3), (0, 1), rowspan=2)
-    ax4 = plt.subplot2grid((3, 3), (0, 2), rowspan=2)
-
-    ax1.set_xlim(0.0, 0.5)
-    ax2.set_xlim(-100, 250)
-    ax4.set_xlim(-100, 250)
-
-    plot_single_feature_one_clip(dataset[category][clip].zcr, 'ZCR distribution across frames\n{0}'.format(title), ax1)
-    plot_single_feature_one_clip(dataset[category][clip].mfcc[:, coefficient],
-                                 'MFCC_{0} distribution across frames\n{1}'.format(coefficient, title), ax2)
-
-    plot_single_feature_all_clips(MFCC, 'Differences in MFCC_{0} distribution\nbetween clips of {1}'.format(coefficient,
-                                                                                    dataset[
-                                                                                                                category][
-                                                                                                                clip].category),
-                                  ax3)
-
-    plot_single_feature_aggregate(aggregate,'Aggregate MFCC_{0} distribution\n(bag-of-frames across all clips\nof {1})'.format(
-                                      coefficient, dataset[category][clip].category), ax4)
-    plt.show()
-
-
+datasetXLengthForConvolution =len(datasetXForConvolution[0])
+print datasetXLengthForConvolution
+datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
 # all_recordings = glob.glob('ESC-50/*/*.ogg')
 # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
@@ -282,14 +52,7 @@ def generate_feature_summary(dataset, category, clip, coefficient):
 #     librosa.display.specshow(clip.logamplitude, sr=44100, x_axis='frames', y_axis='linear', cmap='RdBu_r')
 #     print("-------------------------------------")
 
-numOfClasses = 10
-imagewidth = 16
-clips_10 , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = load_dataset('ESC-10')
-datasetXForConvolution,datasetYForConvolution = reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution)
 
-datasetXLengthForConvolution =len(datasetXForConvolution[0])
-print datasetXLengthForConvolution
-datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
 ################### add layer modified for tensorboard start ################################################
 
@@ -346,7 +109,7 @@ def add_link_layer(input_set_1, input_set_2, in_size_1, in_size_2, out_size, n_l
     layer_name = 'layer%s' % n_layer
     input_set_1_changed = tf.reshape(input_set_1, [-1, in_size_1])
     with tf.name_scope(layer_name):
-        with tf.name_scope('weights'):		
+        with tf.name_scope('weights'):
             Weights = tf.Variable(tf.random_normal([in_size_1+in_size_2, out_size]), name='W')
             tf.histogram_summary(layer_name + '/weights', Weights)
         with tf.name_scope('biases'):
@@ -595,37 +358,3 @@ for i in range(20):
 
 # direct to the local dir and run this in terminal:
 # $ tensorboard --logdir=logs
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
