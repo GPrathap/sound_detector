@@ -32,14 +32,15 @@ def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
     return newXDataSetX, newYDataSetY
 
 
-
-
-clips_10 , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = api.load_dataset('TRAIN-10')
+clips_10_train , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = api.load_dataset('TRAIN-10')
 datasetXForConvolution,datasetYForConvolution = reconstructFeatureMatrix(datasetXForConvolution, datasetYForConvolution)
-
 datasetXLengthForConvolution =len(datasetXForConvolution[0])
-print datasetXLengthForConvolution
 datasetYLengthForConvolution = len(datasetYForConvolution[0])
+
+
+'''PLEASE LOAD TEST DATA SET SIMILAR TO ABOVE'''
+# clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
+# datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
 
 # all_recordings = glob.glob('ESC-50/*/*.ogg')
 # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
@@ -51,8 +52,6 @@ datasetYLengthForConvolution = len(datasetYForConvolution[0])
 #     plt.subplot(2, 1, 2)
 #     librosa.display.specshow(clip.logamplitude, sr=44100, x_axis='frames', y_axis='linear', cmap='RdBu_r')
 #     print("-------------------------------------")
-
-
 
 ################### add layer modified for tensorboard start ################################################
 
@@ -300,9 +299,11 @@ merged = tf.merge_all_summaries()
 train_writer = tf.train.SummaryWriter("logs/train", sess.graph)
 # test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 sess.run(tf.initialize_all_variables())
+saver = tf.train.Saver()
 ###########################################################
 
-for i in range(20):
+for i in range(1000):
+    saver.restore(sess, "neural_net/neural_net.ckpt")
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
     if i % 2 == 0:
         train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
@@ -310,6 +311,9 @@ for i in range(20):
         train_writer.add_summary(train_result, i)
         loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
         print(loss_value)
+
+save_path = saver.save(sess, "neural_net/neural_net.ckpt")
+print("Save to path: ", save_path)
 
 # previous_loss_value = 20
 # epsilon = 0.0001
@@ -332,10 +336,8 @@ for i in range(20):
 #     print("{:.9f}".format(loss_value - previous_loss_value))
 #     if ((previous_loss_value - loss_value) < epsilon):
 #         counter += 1
-#
 #     else:
 #         counter = 0
-#
 #     i = i + 1
 ##############################################
 
@@ -352,9 +354,6 @@ for i in range(20):
 # writer.add_summary(result, i)
 # loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution})
 # print(loss_value)
-
-
-
 
 # direct to the local dir and run this in terminal:
 # $ tensorboard --logdir=logs

@@ -96,6 +96,7 @@ def plot_single_feature_aggregate(feature, title, ax):
 
 def generate_feature_summary(dataset, category, clip, coefficient):
     title = "{0} : {1}".format(dataset[category][clip].category, dataset[category][clip].filename)
+    title = "title"
     MFCC = pd.DataFrame()
     aggregate = []
     for i in range(0, len(dataset[category])):
@@ -130,9 +131,9 @@ def generate_feature_summary(dataset, category, clip, coefficient):
 
 
 
-    clips_50 = api.load_dataset('ESC-50')
+clips_10 = api.load_dataset('TRAIN-10')
 
-    # all_recordings = glob.glob('ESC-10/*/*.ogg')
+    # all_recordings = glob.glob('TRAIN-10/*/*.ogg')
     # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
     #
     # with clip.audio as audio:
@@ -156,6 +157,6 @@ def generate_feature_summary(dataset, category, clip, coefficient):
     #         plot_clip_overview(clips_10[c][i], axes[c, i])
     # plt.show()
 
-    # plot_single_clip(clips_10[2][0])
+    #plot_single_clip(clips_10[2][0])
 
-    # generate_feature_summary(clips_10, 1, 0, 1)
+generate_feature_summary(clips_10, 1, 0, 1)
