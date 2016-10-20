@@ -25,7 +25,8 @@ import pandas as pd
 import random
 random.seed(20150420)
 numOfClasses = 10
-
+numberOfBins = 128
+numberOfMfcc = 128
 class Clip:
     """A single 5-sec long recording."""
 
@@ -80,14 +81,14 @@ class Clip:
         # MFCC computation with default settings (2048 FFT window length, 512 hop length, 128 bands)
         self.melspectrogram = librosa.feature.melspectrogram(audio.raw, sr=Clip.RATE, hop_length=Clip.FRAME)
         self.logamplitude = librosa.logamplitude(self.melspectrogram)
-        self.mfcc = librosa.feature.mfcc(S=self.logamplitude, n_mfcc=256).transpose()
+        self.mfcc = librosa.feature.mfcc(S=self.logamplitude, n_mfcc=numberOfMfcc).transpose()
 
     def _compute_fft(self, audio):
         self.fft = []
         frames = int(np.ceil(len(audio.data) / 1000.0 * Clip.RATE / Clip.FRAME))
         for i in range(0, frames):
             frame = Clip._get_frame(audio, i)
-            ps = np.fft.fft(frame)
+            ps = np.fft.fft(frame, numberOfBins)
             self.fft.append(librosa.logamplitude(np.abs(ps)**2))
         self.fft = np.asarray(self.fft)
 
@@ -164,10 +165,12 @@ def load_dataset(name):
                 if clip[-3:] == 'ogg':
                     audioFile = Clip('{0}/{1}'.format(directory, clip))
                     numberOfWindows = len(audioFile.mfcc)
-                    datasetXForConvolution+=audioFile.mfcc.tolist()
+                    mfccFeq=audioFile.mfcc.tolist()
+                    fftFeq = audioFile.fft.tolist()
                     for i in range(0, numberOfWindows):
                         classes = getClassArray()
                         classes[int('{1}'.format(name, directory).split("/")[1].split("-")[0]) - 1] = 1
+                        datasetXForConvolution.append(mfccFeq[i]+fftFeq[i])
                         datasetYForConvolution.append(classes)
                         datasetYForFull.append(classes)
                         datasetXForFull.append([audioFile.zcr[i],  audioFile.energy[i], audioFile.energy_entropy[i]])

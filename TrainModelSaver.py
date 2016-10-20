@@ -15,7 +15,7 @@ import tensorflow as tf
 
 numOfClasses = 10
 imagewidth = 16
-
+global prediction
 
 def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
     newXDataSetX = []
@@ -38,9 +38,8 @@ datasetXLengthForConvolution =len(datasetXForConvolution[0])
 datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
 
-'''PLEASE LOAD TEST DATA SET SIMILAR TO ABOVE'''
-# clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
-# datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
+clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
+datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
 
 # all_recordings = glob.glob('ESC-50/*/*.ogg')
 # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
@@ -237,7 +236,7 @@ link_layer = add_link_layer(h_pool2, fully_connected_layer_2, (width / 4) * (hei
 # b_fc2 = bias_variable([nodes2])
 # prediction = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
 
-pre_prediction = add_layer(link_layer, 10, datasetYLengthForConvolution, 4)
+prediction = add_layer(link_layer, 10, datasetYLengthForConvolution, 4)
 # pre_prediction = add_layer(h_fc1, nodes1, datasetYLengthForConvolution, 4)
 
 
@@ -269,7 +268,7 @@ pre_prediction = add_layer(link_layer, 10, datasetYLengthForConvolution, 4)
 #total_loss = tf.reduce_mean(-tf.reduce_sum(ys * tf.log(prediction), [1]))
 ##  this is equivalent to
 with tf.name_scope('loss'):
-    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(pre_prediction, ys))
+    loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(prediction, ys))
 
 
 
@@ -297,20 +296,23 @@ with tf.name_scope('train'):
 sess = tf.Session()
 merged = tf.merge_all_summaries()
 train_writer = tf.train.SummaryWriter("logs/train", sess.graph)
+test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 # test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 sess.run(tf.initialize_all_variables())
 saver = tf.train.Saver()
 ###########################################################
 
-for i in range(1000):
+for i in range(10):
     saver.restore(sess, "neural_net/neural_net.ckpt")
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
     if i % 2 == 0:
         train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
-         # test_result = sess.run(merged, feed_dict={xs: X_test, ys: y_test, keep_prob: 1})
+        test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
         train_writer.add_summary(train_result, i)
+        test_writer.add_summary(test_result, i)
         loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
-        print(loss_value)
+        accuracy_value = compute_accuracy(datasetXForConvolution, datasetYForConvolution)
+        print("Loss value="+ str(loss_value) + "Training Accuracy=" + str(accuracy_value))
 
 save_path = saver.save(sess, "neural_net/neural_net.ckpt")
 print("Save to path: ", save_path)
