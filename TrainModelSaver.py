@@ -14,7 +14,7 @@ import tensorflow as tf
 
 
 numOfClasses = 10
-imagewidth = 16
+imagewidth = 40
 global prediction
 
 def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
@@ -38,8 +38,8 @@ datasetXLengthForConvolution =len(datasetXForConvolution[0])
 datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
 
-clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
-datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
+#clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
+#datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
 
 # all_recordings = glob.glob('ESC-50/*/*.ogg')
 # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
@@ -173,8 +173,8 @@ def compute_accuracy(v_xs, v_ys):
 
 ################### add placeholder start################################################
 ####much simpler with STFT
-width = 256
-height = 16
+width = 80
+height = 40
 # should be divisible by 4
 
 with tf.name_scope('inputs'):
@@ -303,19 +303,19 @@ saver = tf.train.Saver()
 ###########################################################
 
 for i in range(10):
-    saver.restore(sess, "neural_net/neural_net.ckpt")
+    #saver.restore(sess, "neural_net/neural_net.ckpt")
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
     if i % 2 == 0:
         train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
-        test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
+        #test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
         train_writer.add_summary(train_result, i)
-        test_writer.add_summary(test_result, i)
+        #test_writer.add_summary(test_result, i)
         loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
         accuracy_value = compute_accuracy(datasetXForConvolution, datasetYForConvolution)
         print("Loss value="+ str(loss_value) + "Training Accuracy=" + str(accuracy_value))
 
-save_path = saver.save(sess, "neural_net/neural_net.ckpt")
-print("Save to path: ", save_path)
+#save_path = saver.save(sess, "neural_net/neural_net.ckpt")
+#print("Save to path: ", save_path)
 
 # previous_loss_value = 20
 # epsilon = 0.0001

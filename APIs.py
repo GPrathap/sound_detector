@@ -25,8 +25,8 @@ import pandas as pd
 import random
 random.seed(20150420)
 numOfClasses = 10
-numberOfBins = 128
-numberOfMfcc = 128
+numberOfBins = 32
+numberOfMfcc = 16
 class Clip:
     """A single 5-sec long recording."""
 
@@ -69,9 +69,9 @@ class Clip:
             self._compute_mfcc(audio)
             self._compute_fft(audio)
             """ Time-domain audio features for full layer network """
-            self._compute_zcr(audio)
-            self._compute_energy(audio)
-            self._compute_energy_entropy(audio)
+            #self._compute_zcr(audio)
+            #self._compute_energy(audio)
+            #self._compute_energy_entropy(audio)
             """ Frequency-domain audio features for full layer network """
             #add if you have more features
 
@@ -82,6 +82,9 @@ class Clip:
         self.melspectrogram = librosa.feature.melspectrogram(audio.raw, sr=Clip.RATE, hop_length=Clip.FRAME)
         self.logamplitude = librosa.logamplitude(self.melspectrogram)
         self.mfcc = librosa.feature.mfcc(S=self.logamplitude, n_mfcc=numberOfMfcc).transpose()
+        self.mfcc_delta = librosa.feature.delta(self.mfcc)
+        self.mfcc_delta2 = librosa.feature.delta(self.mfcc, order=2)
+        self.logamplitude = self.logamplitude.T.flatten()[:, np.newaxis].T
 
     def _compute_fft(self, audio):
         self.fft = []
@@ -166,14 +169,16 @@ def load_dataset(name):
                     audioFile = Clip('{0}/{1}'.format(directory, clip))
                     numberOfWindows = len(audioFile.mfcc)
                     mfccFeq=audioFile.mfcc.tolist()
+                    mfccFeqDelta = audioFile.mfcc_delta.tolist()
+                    mfccFeqDelta2 = audioFile.mfcc_delta2.tolist()
                     fftFeq = audioFile.fft.tolist()
                     for i in range(0, numberOfWindows):
                         classes = getClassArray()
                         classes[int('{1}'.format(name, directory).split("/")[1].split("-")[0]) - 1] = 1
-                        datasetXForConvolution.append(mfccFeq[i]+fftFeq[i])
+                        datasetXForConvolution.append(mfccFeq[i]+mfccFeqDelta[i]+ mfccFeqDelta2[i] + fftFeq[i])
                         datasetYForConvolution.append(classes)
-                        datasetYForFull.append(classes)
-                        datasetXForFull.append([audioFile.zcr[i],  audioFile.energy[i], audioFile.energy_entropy[i]])
+                        #datasetYForFull.append(classes)
+                        #datasetXForFull.append([audioFile.zcr[i],  audioFile.energy[i], audioFile.energy_entropy[i]])
                     category.append(audioFile)
             clips.append(category)
 

@@ -1,2 +1,0 @@
-model_checkpoint_path: "neural_net.ckpt"
-all_model_checkpoint_paths: "neural_net.ckpt"
