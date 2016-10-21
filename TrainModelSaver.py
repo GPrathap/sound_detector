@@ -38,8 +38,8 @@ datasetXLengthForConvolution =len(datasetXForConvolution[0])
 datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
 
-#clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
-#datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
+clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
+datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
 
 # all_recordings = glob.glob('ESC-50/*/*.ogg')
 # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
@@ -211,17 +211,17 @@ h_conv2 = tf.nn.relu(conv2d(h_pool1, W_conv2, [1, 1, 1, 1], 'SAME') + b_conv2)  
 h_pool2 = max_pool_2x2(h_conv2, [1, 2, 2, 1], [1, 2, 2, 1], 'SAME')  # output size 7x7x64
 
 ##fully connected layer 1
-fully_connected_layer_1 = add_layer(xs,datasetXLengthForConvolution, 10, 1, tf.nn.relu)
+##fully_connected_layer_1 = add_layer(xs,datasetXLengthForConvolution, 10, 1, tf.nn.relu)
 
-fully_connected_layer_2 = add_layer(fully_connected_layer_1, 10, 10, 2, tf.nn.relu)
+##fully_connected_layer_2 = add_layer(fully_connected_layer_1, 10, 10, 2, tf.nn.relu)
 
-link_layer = add_link_layer(h_pool2, fully_connected_layer_2, (width / 4) * (height / 4) * depth2, 10, 10, 3, tf.nn.relu)
+##link_layer = add_link_layer(h_pool2, fully_connected_layer_2, (width / 4) * (height / 4) * depth2, 10, 10, 3, tf.nn.relu)
 
 
 ## func1 layer ##
-#nodes1 = 20
-#h_pool2_flat = tf.reshape(h_pool2, [-1, (width / 4) * (height / 4) * depth2])
-# h_fc1 = add_layer(h_pool2_flat, (width / 4) * (height / 4) * depth2, nodes1, 3, tf.tanh)
+nodes1 = 20
+h_pool2_flat = tf.reshape(h_pool2, [-1, (width / 4) * (height / 4) * depth2])
+h_fc1 = add_layer(h_pool2_flat, (width / 4) * (height / 4) * depth2, nodes1, 3, tf.tanh)
 
 
 
@@ -236,7 +236,7 @@ link_layer = add_link_layer(h_pool2, fully_connected_layer_2, (width / 4) * (hei
 # b_fc2 = bias_variable([nodes2])
 # prediction = tf.nn.softmax(tf.matmul(h_fc1_drop, W_fc2) + b_fc2)
 
-prediction = add_layer(link_layer, 10, datasetYLengthForConvolution, 4)
+prediction = add_layer(h_fc1, 20, datasetYLengthForConvolution, 4)
 # pre_prediction = add_layer(h_fc1, nodes1, datasetYLengthForConvolution, 4)
 
 
@@ -297,7 +297,7 @@ sess = tf.Session()
 merged = tf.merge_all_summaries()
 train_writer = tf.train.SummaryWriter("logs/train", sess.graph)
 test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
-# test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
+test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 sess.run(tf.initialize_all_variables())
 saver = tf.train.Saver()
 ###########################################################
@@ -307,9 +307,9 @@ for i in range(10):
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
     if i % 2 == 0:
         train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
-        #test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
+        test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
         train_writer.add_summary(train_result, i)
-        #test_writer.add_summary(test_result, i)
+        test_writer.add_summary(test_result, i)
         loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
         accuracy_value = compute_accuracy(datasetXForConvolution, datasetYForConvolution)
         print("Loss value="+ str(loss_value) + "Training Accuracy=" + str(accuracy_value))
