@@ -303,7 +303,7 @@ saver = tf.train.Saver()
 ###########################################################
 
 for i in range(10):
-    #saver.restore(sess, "neural_net/neural_net.ckpt")
+    saver.restore(sess, "neural_net/neural_net.ckpt")
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
     if i % 2 == 0:
         train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
@@ -314,8 +314,8 @@ for i in range(10):
         accuracy_value = compute_accuracy(datasetXForConvolution, datasetYForConvolution)
         print("Loss value="+ str(loss_value) + "Training Accuracy=" + str(accuracy_value))
 
-#save_path = saver.save(sess, "neural_net/neural_net.ckpt")
-#print("Save to path: ", save_path)
+save_path = saver.save(sess, "neural_net/neural_net.ckpt")
+print("Save to path: ", save_path)
 
 # previous_loss_value = 20
 # epsilon = 0.0001
