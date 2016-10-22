@@ -301,22 +301,26 @@ test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 sess.run(tf.initialize_all_variables())
 tf.add_to_collection('train_op', merged)
 ###########################################################
+new_saver = tf.train.import_meta_graph('/home/geesara/Documents/KVA/sound_detector/neural_net/my-model-20.meta')
+new_saver.restore(sess, '/home/geesara/Documents/KVA/sound_detector/neural_net/my-model-20')
+train_op = tf.get_collection('train_op')[0]
 
 for i in range(100):
     #saver.restore(sess, "neural_net/neural_net.ckpt")
+
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
     if i % 10 == 0:
-        train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
+        train_result = sess.run(train_op, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
         #test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
         train_writer.add_summary(train_result, i)
         #test_writer.add_summary(test_result, i)
         loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
         accuracy_value = compute_accuracy(datasetXForConvolution, datasetYForConvolution)
-        saver.save(sess, 'neural_net/my-model', global_step=i)
-        print("Loss Value="+ str(loss_value) + " Training Accuracy=" + str(accuracy_value))
+        #saver.save(sess, 'neural_net/my-model', global_step=i)
+        print("Loss value="+ str(loss_value) + "Training Accuracy=" + str(accuracy_value))
 
-save_path = saver.save(sess, "neural_net/neural_net.ckpt")
-print("Save to path: ", save_path)
+#save_path = saver.save(sess, "neural_net/neural_net.ckpt")
+#print("Save to path: ", save_path)
 
 
 #meta_graph_def = tf.train.export_meta_graph(filename='/home/geesara/Documents/KVA/sound_detector/neural_net/neural_net.ckpt.meta', as_text=True)
