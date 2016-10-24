@@ -60,12 +60,12 @@ def plot_single_clip(clip):
 
     ax_mfcc = add_subplot_axes(ax, [0.0, 0.0, 1.0, 0.75])
     ax_mfcc.set_xlim(-400, 400)
-    ax_zcr = add_subplot_axes(ax, [0.0, 0.85, 1.0, 0.05])
-    ax_zcr.set_xlim(0.0, 1.0)
+    # ax_zcr = add_subplot_axes(ax, [0.0, 0.85, 1.0, 0.05])
+    # ax_zcr.set_xlim(0.0, 1.0)
 
     plt.title('Feature distribution across frames of a single clip ({0} : {1})'.format(clip.category, clip.filename), y=1.5)
     sb.boxplot(data=MFCC, orient='h', order=list(reversed(MFCC.columns)), ax=ax_mfcc)
-    sb.boxplot(data=pd.DataFrame(clip.zcr, columns=['ZCR']), orient='h', ax=ax_zcr)
+    # sb.boxplot(data=pd.DataFrame(clip.zcr, columns=['ZCR']), orient='h', ax=ax_zcr)
     plt.show()
 
 
@@ -115,7 +115,7 @@ def generate_feature_summary(dataset, category, clip, coefficient):
     ax2.set_xlim(-100, 250)
     ax4.set_xlim(-100, 250)
 
-    plot_single_feature_one_clip(dataset[category][clip].zcr, 'ZCR distribution across frames\n{0}'.format(title), ax1)
+    #plot_single_feature_one_clip(dataset[category][clip].zcr, 'ZCR distribution across frames\n{0}'.format(title), ax1)
     plot_single_feature_one_clip(dataset[category][clip].mfcc[:, coefficient],
                                  'MFCC_{0} distribution across frames\n{1}'.format(coefficient, title), ax2)
 
@@ -131,7 +131,7 @@ def generate_feature_summary(dataset, category, clip, coefficient):
 
 
 
-clips_10 = api.load_dataset('TRAIN-10')
+clips_10 = api.load_dataset_plot('TRAIN-10')
 
     # all_recordings = glob.glob('TRAIN-10/*/*.ogg')
     # clip = Clip(all_recordings[random.randint(0, len(all_recordings) - 1)])
@@ -157,6 +157,6 @@ clips_10 = api.load_dataset('TRAIN-10')
     #         plot_clip_overview(clips_10[c][i], axes[c, i])
     # plt.show()
 
-    #plot_single_clip(clips_10[2][0])
+plot_single_clip(clips_10[2][0])
 
-generate_feature_summary(clips_10, 1, 0, 1)
+# generate_feature_summary(clips_10, 1, 0, 1)

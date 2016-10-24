@@ -17,6 +17,11 @@ numOfClasses = 10
 imagewidth = 40
 modlePath = "neural_net/neural_net.ckpt"
 global prediction
+global accuracy
+
+
+a = np.random.rand(1,40960)[0]
+audoData = api.ClipRealTime(a)
 
 def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
     newXDataSetX = []
@@ -33,11 +38,18 @@ def reconstructFeatureMatrix(datasetXForConvolution,datasetYForConvolution):
     return newXDataSetX, newYDataSetY
 
 
-clips_10_train , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = api.load_dataset('TRAIN-10')
+clips_10_train , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = api.load_dataset('TEST-10')
 datasetXForConvolution,datasetYForConvolution = reconstructFeatureMatrix(datasetXForConvolution, datasetYForConvolution)
 datasetXLengthForConvolution =len(datasetXForConvolution[0])
 datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
+# clips_10_test , datasetXForConvolution, datasetYForConvolution , datasetXForFull1, datasetYForFull1 = api.load_dataset_realtime(audoData)
+#
+# # clips_10_train , datasetXForConvolution, datasetYForConvolution , datasetXForFull, datasetYForFull = api.load_dataset('TEST-10')
+# #datasetXForConvolution1,datasetYForConvolution1 = reconstructFeatureMatrixRealTime(datasetXForConvolution1, datasetYForConvolution1)
+#
+# datasetXLengthForConvolution =len(datasetXForConvolution[0])
+# datasetYLengthForConvolution = len(datasetYForConvolution[0])
 
 
 # all_recordings = glob.glob('ESC-50/*/*.ogg')
@@ -159,10 +171,24 @@ def max_pool_2x2(x, kernelsize, stride, pad):
 
 #####################classification accuracy computer start###################################################
 
+# def compute_accuracy(v_xs, v_ys):
+#     global prediction
+#     y_pre = sess.run(prediction, feed_dict={xs: v_xs, keep_prob: 1})
+#     correct_prediction = tf.equal(tf.argmax(y_pre, 1), tf.argmax(v_ys, 1))
+#     global accuracy
+#     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+#     result = sess.run(accuracy, feed_dict={xs: v_xs, ys: v_ys, keep_prob: 1})
+#     return result
+
+
 def compute_accuracy(v_xs, v_ys):
     global prediction
-    y_pre = sess.run(prediction, feed_dict={xs: v_xs, keep_prob: 1})
-    correct_prediction = tf.equal(tf.argmax(y_pre, 1), tf.argmax(v_ys, 1))
+    y_pre1 = sess.run(prediction, feed_dict={xs: v_xs, keep_prob: 1})
+    y_pre2 = tf.nn.softmax(y_pre1)
+    print y_pre2
+    correct_prediction = tf.equal(tf.argmax(y_pre2, 1), tf.argmax(v_ys, 1))
+    sess.run(y_pre2, feed_dict={xs: v_xs})[0]
+    global accuracy
     accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     result = sess.run(accuracy, feed_dict={xs: v_xs, ys: v_ys, keep_prob: 1})
     return result
@@ -299,24 +325,43 @@ train_writer = tf.train.SummaryWriter("logs/train", sess.graph)
 test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 #test_writer = tf.train.SummaryWriter("logs/test", sess.graph)
 sess.run(tf.initialize_all_variables())
-tf.add_to_collection('train_op', merged)
+tf.add_to_collection('train_op', train_step)
+tf.add_to_collection('prediction', prediction)
+
 ###########################################################
 
-for i in range(100):
+for i in range(2):
     #saver.restore(sess, "neural_net/neural_net.ckpt")
     sess.run(train_step, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
-    if i % 10 == 0:
+    if i % 2 == 0:
         train_result = sess.run(merged, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 0.5})
         #test_result = sess.run(merged, feed_dict={xs: datasetXForConvolution_test, ys: datasetYForConvolution_test, keep_prob: 1})
-        train_writer.add_summary(train_result, i)
+        #train_writer.add_summary(train_result, i)
+        #print(sess.run(merged, feed_dict={xs: datasetXForConvolution}))
         #test_writer.add_summary(test_result, i)
         loss_value = sess.run(loss, feed_dict={xs: datasetXForConvolution, ys: datasetYForConvolution, keep_prob: 1})
         accuracy_value = compute_accuracy(datasetXForConvolution, datasetYForConvolution)
         saver.save(sess, 'neural_net/my-model', global_step=i)
         print("Loss Value="+ str(loss_value) + " Training Accuracy=" + str(accuracy_value))
 
-save_path = saver.save(sess, "neural_net/neural_net.ckpt")
-print("Save to path: ", save_path)
+
+clips_10_test , datasetXForConvolution_test, datasetYForConvolution_test , datasetXForFull_test, datasetYForFull_test = api.load_dataset('TEST-10')
+datasetXForConvolution_test,datasetYForConvolution_test = reconstructFeatureMatrix(datasetXForConvolution_test, datasetYForConvolution_test)
+
+
+
+gh = []
+gh.append(datasetXForConvolution_test[0])
+y_pre1 = sess.run(prediction, feed_dict={xs: gh, keep_prob: 1})
+#y_pre1 = sess.run(prediction, feed_dict={xs: datasetXForConvolution_test, keep_prob: 1})
+y_pre2 = tf.nn.softmax(y_pre1)
+print y_pre2
+correct_prediction = tf.equal(tf.argmax(y_pre2, 1), tf.argmax(gh, 1))
+sess.run(y_pre2, feed_dict={xs: gh})[0]
+
+# print("Testing Accuracy:", sess.run(accuracy, feed_dict={xs: datasetXForConvolution_test}))
+# save_path = saver.save(sess, "neural_net/neural_net.ckpt")
+# print("Save to path: ", save_path)
 
 
 #meta_graph_def = tf.train.export_meta_graph(filename='/home/geesara/Documents/KVA/sound_detector/neural_net/neural_net.ckpt.meta', as_text=True)
