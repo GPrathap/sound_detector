@@ -1,3 +1,5 @@
+from random import randint
+
 import librosa
 import librosa.display
 import matplotlib.pyplot as plt
@@ -29,12 +31,31 @@ def plot_clip_overview(clip, ax):
         ax_waveform.get_xaxis().set_visible(False)
         ax_waveform.get_yaxis().set_visible(False)
         ax_waveform.set_title('{0} \n {1}'.format(clip.category, clip.filename), {'fontsize': 8}, y=1.03)
-        librosa.display.specshow(clip.feature_list['fft'].get_logamplitude(), sr=api.Clip.RATE, x_axis='time', y_axis='mel', cmap='RdBu_r')
+        result = np.array(clip.feature_list['fft'].get_logamplitude()[0:2])
+        # result = np.array(clip.feature_list['mfcc'].get_mel_spectrogram()[0:2])
+
+        librosa.display.specshow(result, sr=api.Clip.RATE, x_axis='time', y_axis='mel', cmap='RdBu_r')
         ax_spectrogram.get_xaxis().set_visible(False)
         ax_spectrogram.get_yaxis().set_visible(False)
 
+def save_plot_clip_overview(clip):
+
+    with clip.audio as audio:
+        figure = plt.figure(figsize=(500, 600), dpi=1)
+        axis = plt.subplot(1, 1, 1)
+        plt.axis('off')
+        plt.tick_params(axis='both', left='off', top='off', right='off', bottom='off', labelleft='off', labeltop='off',
+                        labelright='off', labelbottom='off')
+
+        result = np.array(clip.feature_list['fft'].get_logamplitude()[0:2])
+
+        librosa.display.specshow(result, sr=api.Clip.RATE, x_axis='time', y_axis='mel', cmap='RdBu_r')
+        extent = axis.get_window_extent().transformed(figure.dpi_scale_trans.inverted())
+        plt.savefig((clip.filename + str("_.jpg")), format='jpg', bbox_inches=extent, pad_inches=0)
+        plt.close()
 
 def plot_single_clip(clip):
+
     col_names_mfcc = list('MFCC_{}'.format(i) for i in range(np.shape(clip.feature_list["mfcc"].get_mfcc())[1]))
     col_names_zcr = list('ZCR_{}'.format(i) for i in range(1))
     MFCC = pd.DataFrame(clip.feature_list["mfcc"].get_mfcc()[:, :], columns=col_names_mfcc)
@@ -115,9 +136,17 @@ def view_clip_overview(categories = 5, clips_shown = 1):
             plot_clip_overview(clips_10[c][i], axes[c])
     plt.show()
 
-loader = DataLoader()
+def save_clip_overview(categories = 5, clips_shown = 1):
+
+    for c in range(0, categories):
+        for i in range(0, clips_shown):
+            save_plot_clip_overview(clips_10[c][i])
+
+
+loader = DataLoader('TRAIN-10', "audio_clips_segmentation.tfrecords", 512, 1,1, 2)
 clips_10 = loader.load_dataset('TRAIN-10')
 
 # plot_single_clip(clips_10[1][0])
 # generate_feature_summary(clips_10, 1, 0, 1)
-view_clip_overview(10,1)
+#view_clip_overview(10,1)
+save_clip_overview(10, 1)
