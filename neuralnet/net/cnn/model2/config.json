@@ -1,0 +1,21 @@
+{
+  "net":{
+    "learning_rate":0.002,
+    "conv1_features":32,
+    "conv2_features":64,
+    "max_pool_size1":2,
+    "max_pool_size2":2,
+    "strides_layer1":5,
+    "strides_layer2":5,
+    "fully_connected_size1":1024,
+    "filter_side":5,
+    "dropout":0.3,
+    "training_iters": 200000,
+    "display_step": 10,
+    "keep_prob":0.006,
+    "model_path" : "/neuralnet/net/cnn/model2/model/model.ckpt",
+    "logs_path" : "/neuralnet/net/cnn/model2/graph"
+  }
+}
+
+

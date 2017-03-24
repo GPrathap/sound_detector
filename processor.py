@@ -52,7 +52,7 @@ class Clip:
         return '<{0}/{1}>'.format(self.category, self.filename)
 
     def get_feature_vector(self):
-        return self.featureManager.getRegisteredFeature("fft").get_fft_spectrogram()
+        return self.featureManager.getRegisteredFeature("fft").get_logamplitude()
 
 
 
