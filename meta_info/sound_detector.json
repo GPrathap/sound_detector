@@ -5,7 +5,7 @@
         "num_epochs": 2,
         "batch_size": 4,
         "dir": "/",
-        "data_set_name": "TRAIN-10",
+        "data_set_name": "ESC-10",
         "tfrecords_filename": "/build/tfrecords_train/audio_clips_segmentation.tfrecords",
         "number_of_class": 10,
         "generated_image_width": 299,

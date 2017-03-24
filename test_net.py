@@ -96,7 +96,7 @@ def runTest(loader, cnn_model):
 
 
 project_dir = "/home/runge/projects/sound_detector"
-dataset_dir = "/home/runge/projects/sound_detector/TRAIN-10"
+dataset_dir = "/home2/geesara/dataset/ESC-10"
 loader = DataLoader(project_dir, dataset_dir)
 cnn_model = CNNModel1(project_dir, loader.get_train_config())
 

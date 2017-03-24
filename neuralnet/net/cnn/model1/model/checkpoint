@@ -1,0 +1,6 @@
+model_checkpoint_path: "/home/runge/projects/sound_detector/neuralnet/net/cnn/model1/model/model.ckpt-237"
+all_model_checkpoint_paths: "/home/runge/projects/sound_detector/neuralnet/net/cnn/model1/model/model.ckpt-233"
+all_model_checkpoint_paths: "/home/runge/projects/sound_detector/neuralnet/net/cnn/model1/model/model.ckpt-234"
+all_model_checkpoint_paths: "/home/runge/projects/sound_detector/neuralnet/net/cnn/model1/model/model.ckpt-235"
+all_model_checkpoint_paths: "/home/runge/projects/sound_detector/neuralnet/net/cnn/model1/model/model.ckpt-236"
+all_model_checkpoint_paths: "/home/runge/projects/sound_detector/neuralnet/net/cnn/model1/model/model.ckpt-237"
